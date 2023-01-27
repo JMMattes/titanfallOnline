@@ -10,6 +10,7 @@ from dotenv import load_dotenv
 load_dotenv()
 token = os.getenv("DISCORD_TOKEN01")
 user_ids_string = os.environ.get("USER_IDS")
+user_ids = list(map(int, user_ids_string.split(",")))  # list of user ids to send the message to
 
 # Setup Intents for Discord
 class aclient(discord.Client):
@@ -22,8 +23,7 @@ class aclient(discord.Client):
 client = aclient()
 
 # Constants
-USER_IDS = list(map(int, user_ids_string.split(",")))  # list of user ids to send the message to
-CHECK_INTERVAL = 60  # check website every 5 minutes, in seconds
+CHECK_INTERVAL = 60  # check website every 1 minutes, in seconds
 MESSAGE_WAIT_TIME = 60  # wait this many seconds (default = 2 hours or 7200 seconds) before sending another message
 last_message_time = 0  # time of last message sent
 
@@ -32,7 +32,7 @@ async def send_message(message):
     global last_message_time
     # Check if enough time has passed since the last message
     if time.time() - last_message_time > MESSAGE_WAIT_TIME:
-        for user_id in USER_IDS:
+        for user_id in user_ids:
             user = client.get_user(user_id)
             await user.send(message)
         last_message_time = time.time()
@@ -43,8 +43,11 @@ async def send_message(message):
 async def main_loop():
     while True:
         try:
+            # URL to explore
+            website = "https://titanfall.p0358.net/status"
+            
             # Send a GET request to the website
-            response = requests.get("https://titanfall.p0358.net/status")
+            response = requests.get(website)
 
             # Parse the HTML content
             soup = BeautifulSoup(response.content, "html.parser")
@@ -59,7 +62,7 @@ async def main_loop():
             output = current_count >= 0
 
             if output:
-                message = f"{current_count} players in Titanfall. Let's GOOOO!!!"
+                message = f"{current_count} players in Titanfall. Let's GOOOO!!!\n{website)"
                 await send_message(message)
             else:
                 print("Output not true, not sending message.")
