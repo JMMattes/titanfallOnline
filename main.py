@@ -1,76 +1,50 @@
-import time
-import requests
-from bs4 import BeautifulSoup
-import discord
-from discord import Intents
-from discord import app_commands
 import os
+import asyncio
+import discord
+import requests
+from discord import Intents
+from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 
 load_dotenv()
 token = os.getenv("DISCORD_TOKEN01")
-user_ids_string = os.environ.get("USER_IDS")
-user_ids = list(map(int, user_ids_string.split(",")))  # list of user ids to send the message to
+USER_IDS = [int(user_id) for user_id in os.getenv("USER_IDS").split(",")]
 
 # Setup Intents for Discord
-class aclient(discord.Client):
-    def __init__(self) -> None:
-        super().__init__(intents=discord.Intents.default())
+client = discord.Client(intents=Intents.all())
 
-# Discord client
-client = aclient()
+print(USER_IDS)
 
-# Constants
-CHECK_INTERVAL = 300  # check website every 5 minutes, in seconds
-MESSAGE_WAIT_TIME = 3600  # wait this many seconds (default = 1 hour or 3600 seconds) before sending another message
-last_message_time = 0  # time of last message sent
-
-# Send message function
-@client.event
-async def send_message(message):
-    global last_message_time
-    # Check if enough time has passed since the last message
-    if time.time() - last_message_time > MESSAGE_WAIT_TIME:
-        for user_id in user_ids:
-            user = client.get_user(user_id)
-            await user.send(message)
-        last_message_time = time.time()
-    else:
-        print("Not sending message, last message sent too recently.")
-
-@client.event
-async def main_loop():
+# Function to check website and send message
+async def check_players():
     while True:
-        try:
-            # URL to explore
-            website = "https://titanfall.p0358.net/status"
-            
-            # Send a GET request to the website
-            response = requests.get(website)
+        # Make a request to website
+        weburl = str("https://titanfall.p0358.net/status")
+        response = requests.get(weburl)
+        soup = BeautifulSoup(response.text, 'html.parser')
 
-            # Parse the HTML content
-            soup = BeautifulSoup(response.content, "html.parser")
+        # Get the current count
+        current_count = soup.find("strong", id="currentCount").text
 
-            # Find the tag with the ID "currentCount"
-            current_count = soup.find("strong", {"id": "currentCount"})
+        # Check if current count is greater than 6
+        if int(current_count) >= 6:
+            message = f"{current_count} players in Titanfall. Let's GOOOO!!!\n{weburl}"
+            for user_id in USER_IDS:
+                # Send message to users
+                user = client.get_user(user_id)
+                await user.send(message)
+            # Wait for 4 hours before checking again
+            await asyncio.sleep(1*60)
+            #await asyncio.sleep(4*60*60)
+        else:
+            # Wait for 5 minutes before checking again
+            await asyncio.sleep(1*60)
+            #await asyncio.sleep(5*60)
 
-            # Extract the contents of the tag
-            current_count = int(current_count.text)
+@client.event
+async def on_ready():
+    # Create task to check players
+    task = client.loop.create_task(check_players())
 
-            # Check if the contents is greater than 6
-            output = current_count >= 2
-
-            if output:
-                message = f"{current_count} players in Titanfall. Let's GOOOO!!!\n{website}"
-                await send_message(message)
-            else:
-                print("Output not true, not sending message.")
-
-        except:
-            print("Error occured while checking website.")
-
-        # Wait for the next check
-        time.sleep(CHECK_INTERVAL)
-
+# Run the Discord client
 client.run(token)
-client.loop.create_task(main_loop())
