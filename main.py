@@ -16,8 +16,6 @@ user_ids = list(map(int, user_ids_string.split(",")))  # list of user ids to sen
 class aclient(discord.Client):
     def __init__(self) -> None:
         super().__init__(intents=discord.Intents.default())
-        #self.tree = app_commands.CommandTree(self)
-        #self.activity = discord.Activity(type=discord.ActivityType.watching, name="/chat | /help")
 
 # Discord client
 client = aclient()
@@ -28,6 +26,7 @@ MESSAGE_WAIT_TIME = 3600  # wait this many seconds (default = 1 hour or 3600 sec
 last_message_time = 0  # time of last message sent
 
 # Send message function
+@client.event
 async def send_message(message):
     global last_message_time
     # Check if enough time has passed since the last message
