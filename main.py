@@ -33,13 +33,11 @@ async def check_players():
                 # Send message to users
                 user = client.get_user(user_id)
                 await user.send(message)
-            # Wait for 4 hours before checking again
-            await asyncio.sleep(1*60)
-            #await asyncio.sleep(4*60*60)
+            # Wait for 2 hours before checking again
+            await asyncio.sleep(2*60*60)
         else:
             # Wait for 5 minutes before checking again
-            await asyncio.sleep(1*60)
-            #await asyncio.sleep(5*60)
+            await asyncio.sleep(5*60)
 
 @client.event
 async def on_ready():
