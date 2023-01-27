@@ -23,8 +23,8 @@ class aclient(discord.Client):
 client = aclient()
 
 # Constants
-CHECK_INTERVAL = 60  # check website every 1 minutes, in seconds
-MESSAGE_WAIT_TIME = 60  # wait this many seconds (default = 2 hours or 7200 seconds) before sending another message
+CHECK_INTERVAL = 300  # check website every 5 minutes, in seconds
+MESSAGE_WAIT_TIME = 3600  # wait this many seconds (default = 1 hour or 3600 seconds) before sending another message
 last_message_time = 0  # time of last message sent
 
 # Send message function
@@ -58,11 +58,11 @@ async def main_loop():
             # Extract the contents of the tag
             current_count = int(current_count.text)
 
-            # Check if the contents is greater than 1
-            output = current_count >= 0
+            # Check if the contents is greater than 6
+            output = current_count >= 6
 
             if output:
-                message = f"{current_count} players in Titanfall. Let's GOOOO!!!\n{website)"
+                message = f"{current_count} players in Titanfall. Let's GOOOO!!!\n{website}"
                 await send_message(message)
             else:
                 print("Output not true, not sending message.")
