@@ -59,7 +59,7 @@ async def main_loop():
             current_count = int(current_count.text)
 
             # Check if the contents is greater than 6
-            output = current_count >= 6
+            output = current_count >= 2
 
             if output:
                 message = f"{current_count} players in Titanfall. Let's GOOOO!!!\n{website}"
