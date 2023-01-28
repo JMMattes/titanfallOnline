@@ -26,15 +26,15 @@ async def check_players():
         # Get the current count
         current_count = soup.find("strong", id="currentCount").text
 
-        # Check if current count is greater than 6
-        if int(current_count) >= 6:
+        # Check if current count is greater than 14
+        if int(current_count) >= 14:
             message = f"{current_count} players in Titanfall. Let's GOOOO!!!\n{weburl}"
             for user_id in USER_IDS:
                 # Send message to users
                 user = client.get_user(user_id)
                 await user.send(message)
             # Wait for 2 hours before checking again
-            await asyncio.sleep(2*60*60)
+            await asyncio.sleep(4*60*60)
         else:
             # Wait for 5 minutes before checking again
             await asyncio.sleep(5*60)
