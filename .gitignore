@@ -1,7 +1,8 @@
 # Random Extras
 *.tar
 send2tar.py
-bullshit
+bullshit*
+output.txt
 
 # VSCode
 .vscode/*
