@@ -61,7 +61,7 @@ async def check_players():
             
             # Check if current count is greater than 14
             if int(current_count) >= 14:
-                message = f"{current_count} players in Titanfall. Let's GOOOO!!!\nMost players ({col_3_4_5_max}) are currently playing mode type {col_1_max_data} on servers in {col345_ht_str}.\n{weburl}"
+                message = f"{current_count} players in Titanfall. Let's fucking GOOOO!!!\nMost players ({col_3_4_5_max}) are currently playing mode type {col_1_max_data} on servers in {col345_ht_str}.\n{weburl}"
                 for user_id in USER_IDS:
                     # Send message to users
                     user = client.get_user(user_id)
