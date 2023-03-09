@@ -1,85 +1,60 @@
-import os
-import asyncio
+import praw
 import discord
-import requests
+import asyncio
+import os
 from discord import Intents
-from bs4 import BeautifulSoup
 from dotenv import load_dotenv
-import datetime
-import pytz
-import time
 
+# Replace these values with your own
 load_dotenv()
-token = os.getenv("DISCORD_TOKEN01")
-USER_IDS = [int(user_id) for user_id in os.getenv("USER_IDS").split(",")]
+reddit_client_id = os.getenv("REDDIT_CLIENT_ID")
+reddit_client_secret = os.getenv("REDDIT_CLIENT_SECRET")
+reddit_username = os.getenv("REDDIT_USERNAME")
+reddit_password = os.getenv("REDDIT_PASSWORD")
+discord_token = os.getenv("DISCORD_BOT_TOKEN02")
+user_ids = [int(user_id) for user_id in os.getenv("DISCORD_USER_IDS02").split(",")]
 
-# Setup Intents for Discord
-client = discord.Client(intents=Intents.all())
+# Create the Reddit and Discord clients
+reddit = praw.Reddit(client_id=reddit_client_id,
+                     client_secret=reddit_client_secret,
+                     username=reddit_username,
+                     password=reddit_password,
+                     user_agent='myBot/0.0.1')
 
-print(USER_IDS)
+# Setup Intents for Discord client
+discord_client = discord.Client(intents=Intents.all())
 
-# Function to check website and send message
-async def check_players():
+# Keep track of the last post ID seen
+last_post_id = None
+
+# Define a function to send a Discord message
+async def send_discord_message(title, url, user_ids):
+    for user_id in user_ids:
+        user = await discord_client.fetch_user(user_id)
+        message = f'New post on r/movieleaks: **{title}**\n{url}'
+        await user.send(message)
+
+# Define a function to check for new posts
+async def check_for_new_posts():
+    global last_post_id
+    subreddit = reddit.subreddit('movieleaks')
+    new_post = subreddit.new(limit=1).__next__()
+    if last_post_id is None or new_post.id != last_post_id:
+        last_post_id = new_post.id
+        await send_discord_message(new_post.title, new_post.url, user_ids)
+
+# Define a coroutine to run the bot
+async def run_bot():
+    await discord_client.wait_until_ready()
     while True:
-        # Get the current time in Pacific Time
-        pacific_tz = pytz.timezone('America/Los_Angeles')
-        current_time = datetime.datetime.now(pacific_tz)
-        start_time = datetime.time(hour=9, minute=0)
-        end_time = datetime.time(hour=23, minute=0)
-        if start_time <= current_time.time() < end_time:
-            # Make a request to website
-            weburl = str("https://titanfall.p0358.net/status")
-            response = requests.get(weburl)
-            soup = BeautifulSoup(response.text, 'html.parser')
+        await check_for_new_posts()
+        await asyncio.sleep(60) # Check every minute
 
-            # Get the current count
-            current_count = soup.find("strong", id="currentCount").text
-
-            # Get stats-table data and compare for message.
-            table = soup.find('table', {'id': 'stats-table'})
-            headers = [header.text for header in table.find_all('th')[:5]]
-            rows = []
-            for row in table.find_all('tr')[2:]:
-                cols = row.find_all('td')[:5]
-                row_data = [col.text for col in cols]
-                rows.append(row_data)
-
-            # Find the largest number in column 2
-            col_2_max = max([int(row[1]) for row in rows])
-            col_2_max_index = [i for i, row in enumerate(rows) if int(row[1]) == col_2_max]
-            col_2_max_index_int = int(col_2_max_index[0])
-
-            # Save the number and relevant data in column 1 as variables
-            col_1_max_data = rows[col_2_max_index[0]][0]
-
-            # Find the highest number in columns 3, 4, and 5 only from the row with highest value in column 2
-            col_3_4_5 = [int(rows[col_2_max_index_int][2]), int(rows[col_2_max_index_int][3]), int(rows[col_2_max_index_int][4])]
-            col_3_4_5_max = max(col_3_4_5)
-            col_3_4_5_header_index = [i for i, val in enumerate(col_3_4_5) if val == col_3_4_5_max]
-            col_3_4_5_header_text = [headers[2 + i] for i in col_3_4_5_header_index]
-            col345_ht_str = str(col_3_4_5_header_text[0])
-            
-            # Check if current count is greater than 14
-            if int(current_count) >= 14:
-                message = f"{current_count} players in Titanfall. Let's fucking GOOOO!!!\nMost players ({col_3_4_5_max}) are currently playing mode type {col_1_max_data} on servers in {col345_ht_str}.\n{weburl}"
-                for user_id in USER_IDS:
-                    # Send message to users
-                    user = client.get_user(user_id)
-                    await user.send(message)
-                # Wait for 2 hours before checking again
-                await asyncio.sleep(4*60*60)
-            else:
-                # Wait for 5 minutes before checking again
-                await asyncio.sleep(5*60)
-        else:
-            print("The script is only allowed to run between 9am and 11pm Pacific Time.")
-            print("Waiting 5 minutes to check the time again...")
-            await asyncio.sleep(5*60)
-
-@client.event
+# Start the bot
+@discord_client.event
 async def on_ready():
-    # Create task to check players
-    task = client.loop.create_task(check_players())
-    
+    # Create task to run bot
+    task = discord_client.loop.create_task(run_bot())
+
 # Run the Discord client
-client.run(token)
+discord_client.run(discord_token)
